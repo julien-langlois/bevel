@@ -1,0 +1,31 @@
+[workspace]
+resolver = "3"
+members = ["bevel-*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.95"
+repository = "https://github.com/julien-langlois/bevel"
+homepage = "https://julien-langlois.github.io/bevel/"
+authors = ["Julien Langlois"]
+
+[workspace.dependencies]
+# `version` is what crates.io keeps when the crates are published (the path is dropped).
+# The crates share one version: cargo-release bumps every line here with it (release.toml).
+bevel-fonts-build = { version = "0.1.0", path = "bevel-fonts-build" }
+bevel-i18n = { version = "0.1.0", path = "bevel-i18n" }
+bevel-theme = { version = "0.1.0", path = "bevel-theme" }
+bevel-widgets = { version = "0.1.0", path = "bevel-widgets" }
+bevel-window = { version = "0.1.0", path = "bevel-window" }
+# Stock egui from crates.io: unlike craft-libs, bevel does not patch egui/winit
+# onto a fork, so it stays publishable and tracks upstream releases.
+egui = { version = "0.37", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"

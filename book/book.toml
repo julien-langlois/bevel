@@ -1,0 +1,23 @@
+[book]
+title = "bevel"
+description = "A small kit for native-looking desktop apps in Rust with egui."
+authors = ["Julien Langlois"]
+language = "en"
+src = "src"
+
+[build]
+build-dir = "build"
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/julien-langlois/bevel"
+edit-url-template = "https://github.com/julien-langlois/bevel/edit/main/book/{path}"
+site-url = "/bevel/"
+preferred-dark-theme = "navy"
+
+# Code blocks are excerpts of compiled examples (bevel-examples), not runnable snippets.
+[output.html.playground]
+runnable = false
+
+[output.html.search]
+enable = true

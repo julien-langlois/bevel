@@ -1,0 +1,33 @@
+[package]
+name = "bevel-fonts-build"
+description = "Embeds font faces from a craft-fonts checkout in an app's build.rs, optionally cut to the characters of its translations, or serves them for web builds."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords = ["fonts", "build-script", "subset", "cjk", "embed"]
+categories = ["development-tools::build-utils", "text-processing"]
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[features]
+# Cut the `role ui` faces to the catalogs' characters (`Embed::subset_to`). Enable it only in an
+# app's `[build-dependencies]`, so the subsetter stays out of the app itself.
+subset = ["dep:skera", "dep:skrifa"]
+
+[dependencies]
+skera = { version = "0.8", optional = true }
+skrifa = { version = "0.48", default-features = false, features = ["std"], optional = true }
+
+[dev-dependencies]
+bevel-fonts-build-consumer = { path = "tests/consumer" }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+# Marks each item with the feature it needs (`#![cfg_attr(docsrs, feature(doc_cfg))]`).
+rustdoc-args = ["--cfg", "docsrs"]

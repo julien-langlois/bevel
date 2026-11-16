@@ -1,0 +1,53 @@
+# cargo-deny: `cargo deny check` (CI: .github/workflows/security.yml).
+# https://embarkstudios.github.io/cargo-deny/
+
+[graph]
+# Every optional feature: a dependency an app can turn on is one it can ship.
+all-features = true
+
+[advisories]
+# RustSec advisories (CVEs, unsound code, yanked crates).
+version = 2
+yanked = "deny"
+# Unmaintained crates only fail the check when they are direct dependencies.
+unmaintained = "workspace"
+# Each entry: the advisory id, why it does not apply or cannot be fixed yet, and when to remove it.
+ignore = []
+
+[licenses]
+version = 2
+confidence-threshold = 0.93
+# Every license found in the dependency tree (`cargo metadata --all-features`), all permissive
+# or file-level copyleft. A new license makes the check fail until it is reviewed here.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "0BSD",
+    "Unlicense",
+    # CLDR and ICU4X data (icu_*, and bevel-i18n's own generated data).
+    "Unicode-3.0",
+    # Fonts: bevel-theme's Inter and JetBrains Mono, egui's default fonts (dev-dependency).
+    "OFL-1.1",
+    "Ubuntu-font-1.0",
+    # File-level copyleft, unmodified: `colored`, through egui_kittest (feature `screen-testing`).
+    "MPL-2.0",
+]
+
+[bans]
+# egui's dependency tree carries a few duplicated versions (skrifa, objc2, windows-*):
+# reported, not fatal, since only upstream releases can merge them.
+multiple-versions = "warn"
+wildcards = "deny"
+# Path dependencies without a version are fine in crates that are never published
+# (bevel-fonts-build's test consumer) and in dev-dependencies (stripped on publish).
+allow-wildcard-paths = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]

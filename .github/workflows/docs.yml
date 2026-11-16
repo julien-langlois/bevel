@@ -1,0 +1,69 @@
+name: Docs
+
+# The guide (book/, mdBook) and the API documentation (rustdoc, under /api/), published
+# together to GitHub Pages: https://julien-langlois.github.io/bevel/
+# Pull requests build both, to catch a broken include or link; only `main` deploys.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false # never cancel a Pages deployment halfway
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust (stable)
+        run: rustup toolchain install stable --profile minimal --no-self-update && rustup default stable
+      - uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
+        with:
+          tool: mdbook@0.5
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Guide
+        run: mdbook build book
+      # The same rustdoc as docs.rs (`--cfg docsrs` marks items with their feature), which
+      # needs nightly. -D warnings: a broken intra-doc link fails the build.
+      - name: Install Rust (nightly)
+        run: rustup toolchain install nightly --profile minimal --no-self-update
+      - name: API documentation
+        env:
+          RUSTDOCFLAGS: --cfg docsrs -D warnings
+        run: |
+          cargo +nightly doc --workspace --all-features --no-deps --locked \
+            --exclude bevel-fonts-build-consumer --exclude bevel-examples
+          cp -r target/doc book/build/api
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: book/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write # publishes the site
+      id-token: write # proves to Pages that this run is the one deploying
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

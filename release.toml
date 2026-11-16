@@ -1,0 +1,17 @@
+# cargo-release: `cargo release <level>` bumps every crate to one shared version, updates
+# CHANGELOG.md (hook on bevel-theme's manifest), commits, tags `vX.Y.Z` and pushes.
+# Publishing is left to .github/workflows/release.yml, which runs on that tag.
+shared-version = true
+tag-name = "v{{version}}"
+push = true
+publish = false
+
+# GPG-signed commit and tag, with git's `user.signingkey` (gpg asks for the passphrase).
+sign-tag = true
+sign-commit = true
+
+# Releases are cut from main only, and the tag names the shared version, not one crate.
+allow-branch = ["main"]
+tag-message = "Release v{{version}}"
+
+pre-release-commit-message = "chore(release): v{{version}}"

@@ -1,0 +1,40 @@
+[package]
+name = "bevel-window"
+description = "Decides who draws the window frame on each desktop (macOS, Windows, X11, Wayland), makes an egui app's top strip act as its title bar, and keeps the bookkeeping of one window per document."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+readme = "README.md"
+keywords = ["egui", "window", "titlebar", "wayland", "decorations"]
+categories = ["gui"]
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+authors.workspace = true
+
+[features]
+# `decorate`: set the decision on an `egui::ViewportBuilder`. `title_bar`: an app-drawn strip as
+# the title bar (on macOS with AppKit's `movable` flag). `Viewports`: one immediate viewport per window.
+egui = ["dep:egui", "dep:objc2", "dep:objc2-app-kit"]
+
+[dependencies]
+egui = { workspace = true, optional = true }
+
+# Only Linux and the BSDs probe a Wayland compositor; everywhere else the frame is the OS's.
+[target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
+wayland-client = "0.31"
+
+# `title_bar::sync_movable` (`NSWindow.movable`); eframe's winit already uses these.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6.4", default-features = false, features = ["std"], optional = true }
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSApplication", "NSButton", "NSControl", "NSResponder", "NSView", "NSWindow"], optional = true }
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
+# Marks each item with the feature it needs (`#![cfg_attr(docsrs, feature(doc_cfg))]`).
+rustdoc-args = ["--cfg", "docsrs"]
+# Platform-specific items (AppKit, Windows registry, the web) appear on their own targets.
+targets = ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-pc-windows-msvc"]

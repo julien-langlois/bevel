@@ -1,0 +1,27 @@
+[package]
+name = "bevel-examples"
+description = "The bevel guide's examples: compiled in CI, included in the book (book/) and rendered for its screenshots."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+bevel-theme = { workspace = true, features = ["fonts"] }
+bevel-widgets = { workspace = true }
+bevel-window = { workspace = true, features = ["egui"] }
+egui = { workspace = true }
+eframe = { version = "0.37", default-features = false, features = ["wgpu", "x11", "default_fonts"] }
+
+[dev-dependencies]
+egui_kittest = { version = "0.37", features = ["wgpu"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[lints]
+workspace = true
+
+# Never published: cargo-release leaves it out of releases.
+[package.metadata.release]
+release = false

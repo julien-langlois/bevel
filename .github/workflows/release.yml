@@ -1,0 +1,112 @@
+name: Release
+
+# Runs on the tag `cargo release` pushes (release.toml). See RELEASING.md.
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions: {}
+
+# One release at a time per tag, never cancelled halfway through a publish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # The tag must name the version in the manifests, and the crates must package and
+  # build from their packages, before anything is uploaded.
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust (stable)
+        run: rustup toolchain install stable --profile minimal --no-self-update && rustup default stable
+      - name: Tag matches the workspace version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(sed -n 's/^version *= *"\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match the workspace version $version"
+            exit 1
+          fi
+      - run: cargo publish --workspace --dry-run --locked --exclude bevel-fonts-build-consumer
+
+  publish:
+    name: Publish to crates.io
+    needs: verify
+    runs-on: ubuntu-latest
+    # The crates.io token is a secret of this environment (Settings → Environments → release),
+    # so only a job running in it, on a tag, can read it. See RELEASING.md.
+    environment: release
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Rust (stable)
+        run: rustup toolchain install stable --profile minimal --no-self-update && rustup default stable
+      # Crates already at this version are skipped, so a run can be retried after a partial
+      # failure (a crate published, the next one refused).
+      - name: Crates still to publish
+        id: todo
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=${TAG#v}
+          skip=(--exclude bevel-fonts-build-consumer)
+          todo=0
+          for crate in bevel-fonts-build bevel-i18n bevel-widgets bevel-window bevel-theme; do
+            if curl -sSf -o /dev/null -A "bevel-release (https://github.com/julien-langlois/bevel)" \
+                "https://crates.io/api/v1/crates/$crate/$version"; then
+              echo "$crate $version is already on crates.io"
+              skip+=(--exclude "$crate")
+            else
+              todo=$((todo + 1))
+            fi
+          done
+          echo "count=$todo" >> "$GITHUB_OUTPUT"
+          echo "args=${skip[*]}" >> "$GITHUB_OUTPUT"
+      # In dependency order; each crate waits until the index has the ones before it.
+      - name: Publish
+        if: steps.todo.outputs.count != '0'
+        env:
+          # A crates.io API token (scopes publish-new and publish-update, limited to bevel-*).
+          # Trusted Publishing would avoid the long-lived secret.
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} # zizmor: ignore[use-trusted-publishing]
+          SKIP: ${{ steps.todo.outputs.args }}
+        run: cargo publish --workspace --locked $SKIP
+
+  github-release:
+    name: GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the release on this tag
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # git-cliff needs the previous tag
+          persist-credentials: false
+      # This tag's section of the changelog, from the same cliff.toml as CHANGELOG.md.
+      - uses: orhun/git-cliff-action@a9a95522b26fe6403f7bb24031f21fb573d0f5ff # v4.9.1
+        with:
+          config: cliff.toml
+          args: --current --strip header
+        env:
+          OUTPUT: RELEASE_NOTES.md
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --verify-tag --title "$TAG" --notes-file RELEASE_NOTES.md

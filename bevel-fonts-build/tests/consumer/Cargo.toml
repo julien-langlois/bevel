@@ -1,0 +1,22 @@
+[package]
+name = "bevel-fonts-build-consumer"
+description = "Test crate: a build.rs that embeds the bevel-fonts-build fixture the way an app does."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+bevel-fonts-build = { workspace = true }
+
+[build-dependencies]
+bevel-fonts-build = { workspace = true }
+
+[lints]
+workspace = true
+
+# Never published: cargo-release leaves it out of releases.
+[package.metadata.release]
+release = false
