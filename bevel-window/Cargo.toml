@@ -22,7 +22,7 @@ egui = { workspace = true, optional = true }
 
 # Only Linux and the BSDs probe a Wayland compositor; everywhere else the frame is the OS's.
 [target.'cfg(any(target_os = "linux", target_os = "freebsd", target_os = "openbsd", target_os = "netbsd"))'.dependencies]
-wayland-client = "0.31"
+wayland-client = "0.31.15"
 
 # `title_bar::sync_movable` (`NSWindow.movable`); eframe's winit already uses these.
 [target.'cfg(target_os = "macos")'.dependencies]

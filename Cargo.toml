@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
-members = ["bevel-*"]
+# The consumer test crate is also a dev-dependency of bevel-fonts-build, but cargo-hack's
+# --no-dev-deps drops that link: listed here, it stays a member either way.
+members = ["bevel-*", "bevel-fonts-build/tests/consumer"]
 
 [workspace.package]
 version = "0.1.0"

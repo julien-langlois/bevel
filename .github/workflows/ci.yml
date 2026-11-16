@@ -108,7 +108,7 @@ jobs:
         run: cargo test --workspace --all-features --locked -- --skip testing_rename_dialog_snapshots
       - name: Tests (libraries)
         if: runner.os != 'Linux'
-        run: cargo test --workspace --all-features --locked --lib
+        run: cargo test --workspace --all-features --locked --lib --no-fail-fast
 
   # The Arabic snapshot was recorded with the craft-libs egui fork, whose bidi layout stock
   # egui does not have yet: it fails until the snapshot or the layout is updated. Kept
@@ -175,6 +175,8 @@ jobs:
 
   # The lowest versions the manifests allow for bevel's own dependencies: a dependency whose
   # requirement is older than the API the code uses fails here, not in a user's build.
+  # Dev-dependencies are removed first: they are not part of what a user resolves, and the
+  # test stack (egui_kittest, eframe) would otherwise pull the minimums up.
   minimal-versions:
     name: Minimal dependency versions
     runs-on: ubuntu-latest
@@ -191,9 +193,11 @@ jobs:
       - uses: taiki-e/install-action@ab49d3c64680143e184118bed66a46419fc15519 # v2.90.5
         with:
           tool: cargo-hack
+      - name: Remove the dev-dependencies
+        run: cargo hack --remove-dev-deps --workspace
       - name: Resolve the direct dependencies to their lowest versions
         run: cargo +nightly update -Z direct-minimal-versions
-      - run: cargo hack check --workspace --all-features --no-dev-deps
+      - run: cargo check --workspace --all-features
 
   # Beta warns of breakage six weeks ahead; nightly is informational.
   toolchains:

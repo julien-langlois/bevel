@@ -117,7 +117,8 @@ fn required_fails_without_a_usable_checkout() {
     assert!(matches!(run(Embed::new(), Some(&scratch.0), Some("1")).result, Err(Error::NoFaces { .. })));
 }
 
-#[cfg(unix)]
+// Not on macOS: APFS refuses a file name that is not UTF-8 (EILSEQ), so the case cannot arise.
+#[cfg(all(unix, not(target_vendor = "apple")))]
 #[test]
 fn rejects_a_checkout_under_a_non_utf8_path() {
     use std::os::unix::ffi::OsStrExt;
@@ -438,7 +439,9 @@ fn for_ui_embeds_cjk_faces_only_as_cut_interface_faces() {
     assert_eq!(warnings(&r), Vec::<String>::new());
     let r = run(Embed::documents(&["Noto Sans TC UI", "Noto Sans TC"]), Some(&dir), Some("1"));
     assert_eq!(r.result.as_ref().unwrap(), &["Noto Sans TC Regular", "Noto Sans TC UI Regular"]);
-    assert!(r.table.contains("fonts/1.ttf"), "{}", r.table);
+    // The table holds the path as a Rust string literal, with the platform's separator.
+    let path = format!("{:?}", Path::new("fonts").join("1.ttf").display().to_string());
+    assert!(r.table.contains(path.trim_matches('"')), "{}", r.table);
 }
 
 #[test]
